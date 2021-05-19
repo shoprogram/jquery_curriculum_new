@@ -84,19 +84,37 @@
     </div>
     <script src="../../common/js/jquery.js"></script>
     <script>
-      // 今回やるのはソート機能です。
-      // selectボックスをクリックして言語を選び、その言語と関係のあるリストだけが表示されるプログラムです。
-      // [処理の流れ]
-      // ・セレクトボックスをクリックする。
-      // ・セレクトボックスのvalueとliのdata-category-typeが一致しているものをだけ表示させる。
-      // ・Allを選択した場合のみ全てのliを表示させる。
-      // [使うメソッド]
-      // .show() 要素を表示させる
-      // .hide() 要素を隠す
-      // .val() 要素のvalueを取得
-      // .data('') DOM要素にあるdata-~を取得できる
-      // .change() セレクトボックスの値の変更をキャッチする関数
-      // $().each() DOM要素を1つずつループ処理をする（ループ内で$(this)を使うと要素がひとつずつ取得できる）
+      $(function() {
+
+        // 今回やるのはソート機能です。
+        // selectボックスをクリックして言語を選び、その言語と関係のあるリストだけが表示されるプログラムです。
+        // [処理の流れ]
+        // ・セレクトボックスをクリックする。
+        // ・セレクトボックスのvalueとliのdata-category-typeが一致しているものをだけ表示させる。
+        // ・Allを選択した場合のみ全てのliを表示させる。
+        // [使うメソッド]
+        // .show() 要素を表示させる
+        // .hide() 要素を隠す
+        // .val() 要素のvalueを取得
+        // .data('') DOM要素にあるdata-~を取得できる
+        // .change() セレクトボックスの値の変更をキャッチする関数
+        // $().each() DOM要素を1つずつループ処理をする（ループ内で$(this)を使うと要素がひとつずつ取得できる）
+        
+        $('.select').change(function() {
+          var selectVal = $(this).val();
+          
+          $('.list').children('li').each(function() {
+            if(selectVal === $(this).data('category-type')) {
+              $(this).show();
+            }else if(selectVal === 'all') { 
+              $(this).show();
+            }else {
+              $(this).hide();
+            }
+          });
+        });
+
+      });
     </script>
   </body>
 </html>
