@@ -47,7 +47,7 @@
     </div>
     <script src="../../common/js/jquery.js"></script>
     <script>
-      // $(function() {
+      $(function() {
 
         // 今回やるのはドロップメニューです。
         // メニューをhoverすると隠れている中のメニューが表示され、メニューから離れると中のメニューが非表示されるプログラムです。
@@ -60,12 +60,15 @@
         // .stop() 現在動作中のアニメーション処理を全て中止します。
         
         $('.menu__list').children('li').hover(function() {
-          $(this).children('ul').slideDown()
+          $(this).children('ul').stop().slideDown();
         }, function() {
           $(this).children('ul').stop().slideUp();
         })
+
+        // slideDownとslideUp両方にstop()を記述しないと、連続でhoverしたときに途中でアニメーションが止まることなく、hoverした回数分反応する。
+        // そのため、slideDownとslideUp両方にstop()を記述が必要
         
-      // });
+      });
     </script>
   </body>
 </html>

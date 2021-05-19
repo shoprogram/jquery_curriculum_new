@@ -102,19 +102,23 @@
         
         $('.select').change(function() {
           var selectVal = $(this).val();
-          
-          $('.list').children('li').each(function() {
-            if(selectVal === $(this).data('category-type')) {
-              $(this).show();
-            }else if(selectVal === 'all') { 
-              $(this).show();
-            }else {
-              $(this).hide();
-            }
-          });
-        });
+
+          if(selectVal === 'all') {
+            $(this).show
+          }else{
+            $.each($('.list').children('li'),function(index, value) {
+              if(selectVal === $(value).data('category-type')) {
+                $(value).show();
+              }else {
+                $(value).hide();
+              }
+            })
+          }
+         });
 
       });
     </script>
   </body>
 </html>
+
+  
