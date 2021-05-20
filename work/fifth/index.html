@@ -104,9 +104,9 @@
           var selectVal = $(this).val();
 
           if(selectVal === 'all') {
-            $(this).show
+            $('.list').children('li').show();
           }else{
-            $.each($('.list').children('li'),function(index, value) {
+            $('.list').children('li').each(function(index, value) {
               if(selectVal === $(value).data('category-type')) {
                 $(value).show();
               }else {
