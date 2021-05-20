@@ -87,6 +87,38 @@
       //     <a class="btn-item" data-js="page-next" href="">次へ</a>
       //   </div>
       // </div>
+      $(function() {
+        //検索ボタンをクリック時に発火
+        $('.search__btn').click(function() {
+          var searchText = inputText();
+          ajaxData(searchText);
+        })
+
+
+        //入力したテキストの取得
+        function inputText() {
+          return $('.search__text__input').val();
+        }
+
+        function ajaxData(searchKeyword) {
+          var appId = './js/appid.js'
+          $.ajax({
+            url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
+            type: 'GET',
+            datatype: 'json',
+            data: {
+              applicationId: appId,
+              keyword: searchKeyword,
+              booksGenreId: '001'
+            },
+          }).done(function(data) {
+            console.log(data);
+          });
+        }
+
+
+        //行末
+      })
     </script>
   </body>
 </html>
