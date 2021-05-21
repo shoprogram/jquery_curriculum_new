@@ -91,17 +91,30 @@
         //検索ボタンをクリック時に発火
         $('.search__btn').click(function() {
           var searchText = inputText();
-          ajaxData(searchText);
+          booksData(searchText);
+          // クリックしたらHTMLが追加される処理
+          // var j = 0;
+          // $.each(allData, function(index, value) {
+          //   console.log($(value));
+            // $('.lists').html(`<li class="lists__item"><div class="lists__item__inner"><a href="" class="lists__item__link" target="_blank"><img src="" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：</p><p class="lists__item__detail">作者　：</p><p class="lists__item__detail">出版社：</p></a></div></li>`);
+          // })
+
+          console.log($('.lists').children('.lists__item').index());
+          // -- ページャー --
+            // if($('.lists__item').index() >= 20) {
+              
+            // }
+
         })
-
-
+          
+          
         //入力したテキストの取得
         function inputText() {
           return $('.search__text__input').val();
         }
 
-        function ajaxData(searchKeyword) {
-          var appId = './js/appid.js'
+        function booksData(searchKeyword) {
+          var bookList = [];
           $.ajax({
             url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
             type: 'GET',
@@ -112,12 +125,48 @@
               booksGenreId: '001'
             },
           }).done(function(data) {
-            console.log(data);
+            var items = data.Items;
+            console.log(items);
+            var i = 0;
+
+            $.each(items, function() {
+
+              //dataから取ってきてる
+              var imgUrl = items[i].Item.largeImageUrl;
+              var title = items[i].Item.title;
+              var author = items[i].Item.author;
+              var publisher = items[i].Item.publisherName;
+              var itemUrl = items[i].Item.itemUrl
+
+              // 取ってきたやつをオブジェクト化
+              // var fetchData = {
+              //   imgUrl: imgUrl,
+              //   title: title,
+              //   author: author,
+              //   publisher: publisher,
+              //   itemUrl: itemUrl
+              // }
+
+              // 配列にpush
+              // bookList.push(fetchData);
+              // $('.header__title').append(title);
+             console.log(i);
+              $('.lists').append(`<li class="lists__item"><div class="lists__item__inner"><a href="${itemUrl}" class="lists__item__link" target="_blank"><img src="${imgUrl}" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：${title}</p><p class="lists__item__detail">作者　：${author}</p><p class="lists__item__detail">出版社：${publisher}</p></a></div></li>`);
+
+              i++;
+
+            })
           });
+          
         }
 
+        // if(i >= 20) {
 
+        // }
         //行末
+
+        //-- 学んだこと --
+        // 1. ajaxのdataオブジェクト内でのappIdはhtmlのscriptタグでappid.jsファイルを読み込んでおり、そのファイル内でappidをグローバル変数として定義しているため、このhtmlファイルで定義していなくても使える。
       })
     </script>
   </body>
