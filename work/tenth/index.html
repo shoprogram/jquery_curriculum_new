@@ -91,11 +91,13 @@
 
         // ------ここから追加コード------
         var p = 1;
-        
+        var searchKeyword = ""
          //検索ボタンをクリック時に発火
         $('.search__btn').click(function() {
           $('.lists__item').remove();
           $('.pager').remove();
+          $('.message').empty();
+          p = 1;
           booksData(inputText());
         })
             
@@ -105,105 +107,8 @@
         }
         
         // API叩いてデータ取得
-        function booksData(searchKeyword) {
-          $.ajax({
-            url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
-            type: 'GET',
-            datatype: 'json',
-            data: {
-              applicationId: appId,
-              keyword: searchKeyword,
-              booksGenreId: '001',
-              hits: 20,
-              page: p
-            },
-          }).done(function(data, textStatus, jqXHR) {
-            var items = data.Items;
-            var i = 0;
-            $.each(items, function() {
-              var imgUrl = items[i].Item.largeImageUrl;
-              var title = items[i].Item.title;
-              var author = items[i].Item.author;
-              var publisher = items[i].Item.publisherName;
-              var itemUrl = items[i].Item.itemUrl
-              
-              var objectData = {
-                imgUrl: imgUrl,
-                title: title,
-                author: author,
-                publisher: publisher,
-                itemUrl: itemUrl
-              }
-              addListsItem(objectData);
-              i++;
-            })
-            addPager(data);
-            disabledPager(data);
-          }).fail(function (jqXHR, textStatus, errorThrown) {
-            errMessage(jqXHR);
-          })
-        }
-
-        // エラーメッセージ処理
-        function errMessage(jqXHR) {
-          var err = jqXHR.responseJSON.error;
-          if(err === 'too_many_requests') {
-            $('.message').html('リクエスト過多です。しばらく時間を置いてからお試しください。')
-          }else if(err === 'not_found') {
-            $('.message').html('検索結果が見つかりませんでした。</br>別のキーワードで検索して下さい。')
-          }else if(err === 'wrong_parameter') {
-            $('.message').html('検索文字が入力されていません。')
-          }
-        }
-        
-        // 商品表示
-        function addListsItem(objectData) {
-          $('.lists').append(`<li class="lists__item"><div class="lists__item__inner"><a href="${objectData.itemUrl}" class="lists__item__link" target="_blank"><img src="${objectData.imgUrl}" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：${objectData.title}</p><p class="lists__item__detail">作者　：${objectData.author}</p><p class="lists__item__detail">出版社：${objectData.publisher}</p></a></div></li>`);
-        }
-        
-        // pager追加
-        function addPager(data) {
-          if(data.count >= 20) {
-            $('.lists').after(`<div class="pager" data-js="pager"><div class="counter"><span class="counter-current">${data.page}</span>/<span class="counter-all">${data.pageCount}</span></div><div class="btn-wrapper"><a class="btn-item prev-item" data-js="page-prev" href="">前へ</a><a class="btn-item next-item" data-js="page-next" href="">次へ</a></div></div>`)
-          }
-        }
-
-        // pager非表示
-        function disabledPager(data) {
-          if(data.page === 1) {
-            $('.prev-item').addClass('disabled')
-          }
-          if(data.page === data.pageCount) {
-            $('.next-item').addClass('disabled')
-          }
-        }
-        
-
-        // 次のページへ遷移
-        $('body').on('click','.next-item', function(e){
-          resetPager(e);
-          var searchKeyword = inputText();
-          p++;
-          ajaxData(searchKeyword);
-        });
-
-        // 前のページへ遷移
-        $('body').on('click','.prev-item', function(e) {
-          resetPager(e);
-          var searchKeyword = inputText();
-          p--;
-          ajaxData(searchKeyword);
-        });
-
-        // peagerリセット
-        function resetPager(e) {
-          e.preventDefault();
-          $('.lists__item').remove();
-          $('.pager').remove();
-        }
-
-        // ページ遷移時のデータ取得
-        function ajaxData(searchKeyword) {
+        function booksData(keyword) {
+          searchKeyword = keyword;
           $.ajax({
             url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
             type: 'GET',
@@ -217,20 +122,81 @@
             },
           }).done(function(data) {
             var items = data.Items;
-            var i = 0;
-            $.each(items, function() {
-              var itemUrl = items[i].Item.itemUrl;
-              var imgUrl = items[i].Item.largeImageUrl;
-              var title = items[i].Item.title;
-              var author = items[i].Item.author;
-              var publisher = items[i].Item.publisherName;
+            addListsItem(items);
+            addPager(data);
+            disabledPager(data);
+          }).fail(function (error) {
+            errMessage(error);
+          })
+        }
 
-              $('.lists').append(`<li class="lists__item"><div class="lists__item__inner"><a href="${itemUrl}" class="lists__item__link" target="_blank"><img src="${imgUrl}" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：${title}</p><p class="lists__item__detail">作者　：${author}</p><p class="lists__item__detail">出版社：${publisher}</p></a></div></li>`);
+        // エラーメッセージ処理
+        function errMessage(error) {
+          var message = "";
+          if(error.status === 429) {
+            message ='リクエスト過多です。しばらく時間を置いてからお試しください。'
+          }else if(error.status === 400) {
+            message ='検索結果が見つかりませんでした。</br>別のキーワードで検索して下さい。'
+          }else if(error.status === 404) {
+            $message ='検索文字が入力されていません。'
+          }else if (error.status === 0){
+            message ='通信に失敗しました。インターネットの接続をご確認ください。'
+          }
+          $('.message').html(message);
+        }
+        
+        // 商品表示
+        function addListsItem(items) {
+          var i = 0;
+          var li = "";
+          $.each(items, function(index, value) {
+              var itemUrl = value.Item.itemUrl
+              var imgUrl = value.Item.largeImageUrl;
+              var title = value.Item.title;
+              var author = value.Item.author;
+              var publisher = value.Item.publisherName;
+              
+              li += '<li class="lists__item"><div class="lists__item__inner"><a href="' + itemUrl + '" class="lists__item__link" target="_blank"><img src="' + imgUrl + '" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：' + title + '</p><p class="lists__item__detail">作者　：' + author + '</p><p class="lists__item__detail">出版社：' + publisher + '</p></a></div></li>';
+                
               i++;
-            })
-            addPager(data)
-            disabledPager(data)
-          });
+          })
+          $('.lists').append(li);
+        }
+        
+        // pager追加
+        function addPager(data) {
+          $('.lists').after(`<div class="pager" data-js="pager"><div class="counter"><span class="counter-current">${data.page}</span>/<span class="counter-all">${data.pageCount}</span></div><div class="btn-wrapper"><a class="btn-item prev-item" data-js="page-prev" href="">前へ</a><a class="btn-item next-item" data-js="page-next" href="">次へ</a></div></div>`)
+        }
+
+        // pager非表示
+        function disabledPager(data) {
+          if(data.page === 1) {
+            $('.prev-item').addClass('disabled')
+          }
+          if(data.page === data.pageCount) {
+            $('.next-item').addClass('disabled')
+          }
+        }
+
+        // 次のページへ遷移
+        $('body').on('click','[data-js="page-next"]', function(e){
+          resetPager(e);
+          p++;
+          booksData(searchKeyword);
+        });
+
+        // 前のページへ遷移
+        $('body').on('click','[data-js="page-prev"]', function(e) {
+          resetPager(e);
+          p--;
+          booksData(searchKeyword);
+        });
+
+        // pagerリセット
+        function resetPager(e) {
+          e.preventDefault();
+          $('.lists__item').remove();
+          $('.pager').remove();
         }
 
         //-- 学んだこと --
