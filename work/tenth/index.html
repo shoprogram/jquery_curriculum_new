@@ -28,6 +28,7 @@
     <script src="../../common/js/jquery.js"></script>
     <script src="./js/appid.js"></script>
     <script>
+      $(function() {
       // 楽天ブックスの総合検索APIを使って製作してください。
       // answerの挙動を良く見てね！
       //
@@ -79,42 +80,32 @@
       //
       // ページャのテンプレート
       // <div class="pager" data-js="pager">
-      //   <div class="counter">
-      //     <span class="counter-current"></span>/<span class="counter-all"></span>
-      //   </div>
-      //   <div class="btn-wrapper">
-      //     <a class="btn-item" data-js="page-prev" href="">前へ</a>
-      //     <a class="btn-item" data-js="page-next" href="">次へ</a>
-      //   </div>
-      // </div>
-      $(function() {
-        //検索ボタンをクリック時に発火
+        //   <div class="counter">
+          //     <span class="counter-current"></span>/<span class="counter-all"></span>
+          //   </div>
+          //   <div class="btn-wrapper">
+            //     <a class="btn-item" data-js="page-prev" href="">前へ</a>
+            //     <a class="btn-item" data-js="page-next" href="">次へ</a>
+            //   </div>
+            // </div>
+
+        // ------ここから追加コード------
+        var p = 1;
+        
+         //検索ボタンをクリック時に発火
         $('.search__btn').click(function() {
-          var searchText = inputText();
-          booksData(searchText);
-          // クリックしたらHTMLが追加される処理
-          // var j = 0;
-          // $.each(allData, function(index, value) {
-          //   console.log($(value));
-            // $('.lists').html(`<li class="lists__item"><div class="lists__item__inner"><a href="" class="lists__item__link" target="_blank"><img src="" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：</p><p class="lists__item__detail">作者　：</p><p class="lists__item__detail">出版社：</p></a></div></li>`);
-          // })
-
-          console.log($('.lists').children('.lists__item').index());
-          // -- ページャー --
-            // if($('.lists__item').index() >= 20) {
-              
-            // }
-
+          $('.lists__item').remove();
+          $('.pager').remove();
+          booksData(inputText());
         })
-          
-          
+            
         //入力したテキストの取得
         function inputText() {
           return $('.search__text__input').val();
         }
-
+        
+        // API叩いてデータ取得
         function booksData(searchKeyword) {
-          var bookList = [];
           $.ajax({
             url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
             type: 'GET',
@@ -122,52 +113,129 @@
             data: {
               applicationId: appId,
               keyword: searchKeyword,
-              booksGenreId: '001'
+              booksGenreId: '001',
+              hits: 20,
+              page: p
             },
-          }).done(function(data) {
+          }).done(function(data, textStatus, jqXHR) {
             var items = data.Items;
-            console.log(items);
             var i = 0;
-
             $.each(items, function() {
-
-              //dataから取ってきてる
               var imgUrl = items[i].Item.largeImageUrl;
               var title = items[i].Item.title;
               var author = items[i].Item.author;
               var publisher = items[i].Item.publisherName;
               var itemUrl = items[i].Item.itemUrl
-
-              // 取ってきたやつをオブジェクト化
-              // var fetchData = {
-              //   imgUrl: imgUrl,
-              //   title: title,
-              //   author: author,
-              //   publisher: publisher,
-              //   itemUrl: itemUrl
-              // }
-
-              // 配列にpush
-              // bookList.push(fetchData);
-              // $('.header__title').append(title);
-             console.log(i);
-              $('.lists').append(`<li class="lists__item"><div class="lists__item__inner"><a href="${itemUrl}" class="lists__item__link" target="_blank"><img src="${imgUrl}" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：${title}</p><p class="lists__item__detail">作者　：${author}</p><p class="lists__item__detail">出版社：${publisher}</p></a></div></li>`);
-
+              
+              var objectData = {
+                imgUrl: imgUrl,
+                title: title,
+                author: author,
+                publisher: publisher,
+                itemUrl: itemUrl
+              }
+              addListsItem(objectData);
               i++;
-
             })
-          });
-          
+            addPager(data);
+            disabledPager(data);
+          }).fail(function (jqXHR, textStatus, errorThrown) {
+            errMessage(jqXHR);
+          })
         }
 
-        // if(i >= 20) {
+        // エラーメッセージ処理
+        function errMessage(jqXHR) {
+          var err = jqXHR.responseJSON.error;
+          if(err === 'too_many_requests') {
+            $('.message').html('リクエスト過多です。しばらく時間を置いてからお試しください。')
+          }else if(err === 'not_found') {
+            $('.message').html('検索結果が見つかりませんでした。</br>別のキーワードで検索して下さい。')
+          }else if(err === 'wrong_parameter') {
+            $('.message').html('検索文字が入力されていません。')
+          }
+        }
+        
+        // 商品表示
+        function addListsItem(objectData) {
+          $('.lists').append(`<li class="lists__item"><div class="lists__item__inner"><a href="${objectData.itemUrl}" class="lists__item__link" target="_blank"><img src="${objectData.imgUrl}" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：${objectData.title}</p><p class="lists__item__detail">作者　：${objectData.author}</p><p class="lists__item__detail">出版社：${objectData.publisher}</p></a></div></li>`);
+        }
+        
+        // pager追加
+        function addPager(data) {
+          if(data.count >= 20) {
+            $('.lists').after(`<div class="pager" data-js="pager"><div class="counter"><span class="counter-current">${data.page}</span>/<span class="counter-all">${data.pageCount}</span></div><div class="btn-wrapper"><a class="btn-item prev-item" data-js="page-prev" href="">前へ</a><a class="btn-item next-item" data-js="page-next" href="">次へ</a></div></div>`)
+          }
+        }
 
-        // }
-        //行末
+        // pager非表示
+        function disabledPager(data) {
+          if(data.page === 1) {
+            $('.prev-item').addClass('disabled')
+          }
+          if(data.page === data.pageCount) {
+            $('.next-item').addClass('disabled')
+          }
+        }
+        
+
+        // 次のページへ遷移
+        $('body').on('click','.next-item', function(e){
+          resetPager(e);
+          var searchKeyword = inputText();
+          p++;
+          ajaxData(searchKeyword);
+        });
+
+        // 前のページへ遷移
+        $('body').on('click','.prev-item', function(e) {
+          resetPager(e);
+          var searchKeyword = inputText();
+          p--;
+          ajaxData(searchKeyword);
+        });
+
+        // peagerリセット
+        function resetPager(e) {
+          e.preventDefault();
+          $('.lists__item').remove();
+          $('.pager').remove();
+        }
+
+        // ページ遷移時のデータ取得
+        function ajaxData(searchKeyword) {
+          $.ajax({
+            url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
+            type: 'GET',
+            datatype: 'json',
+            data: {
+              applicationId: appId,
+              keyword: searchKeyword,
+              booksGenreId: '001',
+              hits: 20,
+              page: p
+            },
+          }).done(function(data) {
+            var items = data.Items;
+            var i = 0;
+            $.each(items, function() {
+              var itemUrl = items[i].Item.itemUrl;
+              var imgUrl = items[i].Item.largeImageUrl;
+              var title = items[i].Item.title;
+              var author = items[i].Item.author;
+              var publisher = items[i].Item.publisherName;
+
+              $('.lists').append(`<li class="lists__item"><div class="lists__item__inner"><a href="${itemUrl}" class="lists__item__link" target="_blank"><img src="${imgUrl}" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：${title}</p><p class="lists__item__detail">作者　：${author}</p><p class="lists__item__detail">出版社：${publisher}</p></a></div></li>`);
+              i++;
+            })
+            addPager(data)
+            disabledPager(data)
+          });
+        }
 
         //-- 学んだこと --
         // 1. ajaxのdataオブジェクト内でのappIdはhtmlのscriptタグでappid.jsファイルを読み込んでおり、そのファイル内でappidをグローバル変数として定義しているため、このhtmlファイルで定義していなくても使える。
       })
-    </script>
+      </script>
   </body>
 </html>
