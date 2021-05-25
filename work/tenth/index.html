@@ -122,7 +122,6 @@
             },
           }).done(function(data) {
             var items = data.Items;
-            console.log(data);
             if(data.count === 0) {
               $('.message').html('検索結果が見つかりませんでした。</br>別のキーワードで検索して下さい。');
               return false;
@@ -140,9 +139,9 @@
           var message = "";
           if(error.status === 429) {
             message ='リクエスト過多です。しばらく時間を置いてからお試しください。'
-          }else if(error.status === 404) {
+          }else if(error.status === 400) {
             message ='検索文字が入力されていません。'
-          }else if (error.status === 0){
+          }else if(error.status === 0) {
             message ='通信に失敗しました。インターネットの接続をご確認ください。'
           }
           $('.message').html(message);
