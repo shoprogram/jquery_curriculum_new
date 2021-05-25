@@ -88,26 +88,55 @@
             //     <a class="btn-item" data-js="page-next" href="">次へ</a>
             //   </div>
             // </div>
-
+            
         // ------ここから追加コード------
-        var p = 1;
+        var page= 1;
         var searchKeyword = ""
-         //検索ボタンをクリック時に発火
-        $('.search__btn').click(function() {
+        //検索ボタンをクリック時に発火
+        $('[data-js="search-btn"]').click(function() {
           $('.lists__item').remove();
           $('.pager').remove();
           $('.message').empty();
-          p = 1;
-          booksData(inputText());
+          page= 1;
+          getBooksData(inputText());
         })
-            
+        
         //入力したテキストの取得
         function inputText() {
-          return $('.search__text__input').val();
+          return $('[data-js="search-word"]').val();
         }
-        
+    
+        // 次のページへ遷移
+        $('body').on('click','[data-js="page-next"]', function(e){
+          if($(this).hasClass('disabled')) {
+            return false;
+          }else {
+            resetPager(e);
+            page++;
+            getBooksData(searchKeyword);
+          }
+        });
+
+        // 前のページへ遷移
+        $('body').on('click','[data-js="page-prev"]', function(e) {
+          if($(this).hasClass('disabled')) {
+            return false;
+          }else {
+            resetPager(e);
+            page--;
+            getBooksData(searchKeyword);
+          }
+        });
+
+        // pagerリセット
+        function resetPager(e) {
+          e.preventDefault();
+          $('.lists__item').remove();
+          $('.pager').remove();
+        }
+
         // API叩いてデータ取得
-        function booksData(keyword) {
+        function getBooksData(keyword) {
           searchKeyword = keyword;
           $.ajax({
             url: 'https://app.rakuten.co.jp/services/api/BooksTotal/Search/20130522',
@@ -118,38 +147,44 @@
               keyword: searchKeyword,
               booksGenreId: '001',
               hits: 20,
-              page: p
+              page: page
             },
           }).done(function(data) {
             var items = data.Items;
-            if(data.count === 0) {
+            var notData = 0;
+            if(data.count === notData) {
               $('.message').html('検索結果が見つかりませんでした。</br>別のキーワードで検索して下さい。');
               return false;
             }
             addListsItem(items);
             addPager(data);
-            disabledPager(data);
+            addClassDisabled(data);
           }).fail(function (error) {
-            errMessage(error);
+            errJudge(error);
           })
         }
 
         // エラーメッセージ処理
-        function errMessage(error) {
+        function errJudge(error) {
           var message = "";
-          if(error.status === 429) {
-            message ='リクエスト過多です。しばらく時間を置いてからお試しください。'
-          }else if(error.status === 400) {
-            message ='検索文字が入力されていません。'
-          }else if(error.status === 0) {
-            message ='通信に失敗しました。インターネットの接続をご確認ください。'
+          switch (error.status){
+            case 429:
+              message = 'リクエスト過多です。しばらく時間を置いてからお試しください。';
+              break;
+            case 400:
+              message = '検索文字が入力されていません。';
+              break;
+            case 0:
+              message = '通信に失敗しました。インターネットの接続をご確認ください。';
+              break;
+            default:
+              message = '予期せぬエラーが発生しました';
           }
           $('.message').html(message);
         }
         
         // 商品表示
         function addListsItem(items) {
-          var i = 0;
           var li = "";
           $.each(items, function(index, value) {
               var itemUrl = value.Item.itemUrl
@@ -158,48 +193,46 @@
               var author = value.Item.author;
               var publisher = value.Item.publisherName;
               
-              li += '<li class="lists__item"><div class="lists__item__inner"><a href="' + itemUrl + '" class="lists__item__link" target="_blank"><img src="' + imgUrl + '" class="lists__item__img" alt=""><p class="lists__item__detail">作品名：' + title + '</p><p class="lists__item__detail">作者　：' + author + '</p><p class="lists__item__detail">出版社：' + publisher + '</p></a></div></li>';
-                
-              i++;
+              li += '<li class="lists__item">' + 
+                      '<div class="lists__item__inner">' + 
+                        '<a href="' + itemUrl + '" class="lists__item__link" target="_blank">' + 
+                        '<img src="' + imgUrl + '" class="lists__item__img" alt="">' + 
+                          '<p class="lists__item__detail">作品名：' + title + '</p>' + 
+                          '<p class="lists__item__detail">作者　：' + author + '</p>' + 
+                          '<p class="lists__item__detail">出版社：' + publisher + '</p>' + 
+                        '</a>' + 
+                     '</div>' +
+                    '</li>';
           })
           $('.lists').append(li);
         }
         
         // pager追加
         function addPager(data) {
-          $('.lists').after(`<div class="pager" data-js="pager"><div class="counter"><span class="counter-current">${data.page}</span>/<span class="counter-all">${data.pageCount}</span></div><div class="btn-wrapper"><a class="btn-item" data-js="page-prev" href="">前へ</a><a class="btn-item" data-js="page-next" href="">次へ</a></div></div>`)
+          $('.lists').after('<div class="pager" data-js="pager">' + 
+                              '<div class="counter">' + 
+                                '<span class="counter-current">' + data.page + '</span>' + 
+                                '/<span class="counter-all">' + data.pageCount + '</span>' +
+                              '</div>' + 
+                              '<div class="btn-wrapper">' +
+                                '<a class="btn-item" data-js="page-prev" href="">前へ</a>' +
+                                '<a class="btn-item" data-js="page-next" href="">次へ</a>' +
+                              '</div>' +
+                            '</div>');
         }
 
         // pager非表示
-        function disabledPager(data) {
-          if(data.page === 1) {
-            $('[data-js="page-prev"]').addClass('disabled')
+        function addClassDisabled(data) {
+          var minPage = 1
+          if(data.page === minPage) {
+            $('[data-js="page-prev"]').addClass('disabled');
           }
           if(data.page === data.pageCount) {
-            $('[data-js="page-next"]').addClass('disabled')
+            $('[data-js="page-next"]').addClass('disabled');
           }
         }
 
-        // 次のページへ遷移
-        $('body').on('click','[data-js="page-next"]', function(e){
-          resetPager(e);
-          p++;
-          booksData(searchKeyword);
-        });
 
-        // 前のページへ遷移
-        $('body').on('click','[data-js="page-prev"]', function(e) {
-          resetPager(e);
-          p--;
-          booksData(searchKeyword);
-        });
-
-        // pagerリセット
-        function resetPager(e) {
-          e.preventDefault();
-          $('.lists__item').remove();
-          $('.pager').remove();
-        }
 
         //-- 学んだこと --
         // 1. ajaxのdataオブジェクト内でのappIdはhtmlのscriptタグでappid.jsファイルを読み込んでおり、そのファイル内でappidをグローバル変数として定義しているため、このhtmlファイルで定義していなくても使える。
